@@ -17,6 +17,9 @@ class DCMreaderVM:
         self.num_slices = 0
         self.num_frames = 0
         self.broken = False
+        self.patientWeight = 0
+        self.patientHeight = 0
+        self.patientSex = 'X'
         images = []
         slice_locations = []
         file_paths = []        
@@ -34,6 +37,20 @@ class DCMreaderVM:
                     images.append(temp_ds.pixel_array)
                     slice_locations.append(temp_ds.SliceLocation)
                     file_paths.append(os.path.join(folder_name, file))
+                    if self.patientWeight == 0 and self.patientSex == 'X':
+                        patientW = temp_ds.data_element("PatientWeight").value
+                        if patientW > 0:
+                            self.patientWeight = int(patientW)
+                        patientS = temp_ds.data_element("PatientSex").value.strip()
+                        if patientS:
+                            self.patientSex = patientS
+                        studyDescr = temp_ds.data_element('StudyDescription').value
+                        if 'cm' in studyDescr.lower():
+                            studyDescrCleared = studyDescr.lower().replace('cm', '')
+                            height = ''
+                            height = height.join([s for s in studyDescrCleared.split() if s.isdigit()])
+                            if int(height) > self.patientHeight:
+                                self.patientHeight = int(height)
                 except:
                     self.broken = True
                     return
@@ -95,9 +112,30 @@ class DCMreaderVM:
 
     def get_image(self, slice, frame):
         return self.dcm_images[slice, frame, :, :]
+
+    def get_imagesOfSlice(self, slice):
+        return self.dcm_images[slice, :, :, :]
     
     def get_slicelocation(self, slice, frame):
         return self.dcm_slicelocations[slice, frame, 0]
 
     def get_dcm_path(self,slice, frame):
         return self.dcm_file_paths[slice, frame]
+
+    def getPatientWeight(self):
+        return self.patientWeight
+
+    def getPatientSex(self):
+        return self.patientSex
+
+    def getPatientHeight(self):
+        return self.patientHeight
+
+    def getSliceNum(self):
+        return self.num_slices
+
+    def getFrameNum(self):
+        return self.num_frames
+
+    def isBroken(self):
+        return self.broken
