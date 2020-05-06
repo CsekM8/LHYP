@@ -3,7 +3,9 @@ from dicom_reader import DCMreaderVM
 from patient import Patient
 import numpy as np
 import pickle
-# from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt
+from PIL import Image, ImageEnhance
+import random
 
 #Data collection mainly based on dcm files, and meta.txt (for pathology), only using contour to find patient height if it is missing in dcm.
 
@@ -21,7 +23,7 @@ class DataCollector:
                 pathology = 'X'
                 for root, dirs, files in os.walk(os.path.join(rootFolder, patient)):
                     if 'meta.txt' in files:
-                        print(os.path.join(root, 'meta.txt'))
+                        # print(os.path.join(root, 'meta.txt'))
                         with open(os.path.join(root, 'meta.txt'), 'rt') as f:
                             for line in f:
                                 if not line.strip():
@@ -44,6 +46,7 @@ class DataCollector:
                     normalImages = np.ones((requiredNormalImageCount, dcmReaderNormal.getFrameNum(), a, b))
                     for i in range(requiredNormalImageCount):
                         normalImages[i] = dcmReaderNormal.get_imagesOfSlice((i + 1) * normalImageStep - 1)
+                    # normalImages = dcmReaderNormal.dcm_images
 
                     if dcmReaderContrast is not None and not dcmReaderContrast.isBroken() and pathology != 'X':
                         requiredContrastImageCount = 6
@@ -77,7 +80,7 @@ class DataCollector:
                                 patHeight = dcmReaderContrast.getPatientHeight()
 
                         self.patients.append(Patient(patient, dcmReaderNormal.getPatientWeight(), patHeight,
-                                                dcmReaderNormal.getPatientSex(),
+                                                dcmReaderNormal.getPatientSex(), pathology,
                                                 normalImages, contrastImages))
 
                     else:
@@ -102,7 +105,7 @@ class DataCollector:
                             patHeight = dcmReaderNormal.getPatientHeight()
 
                         self.patients.append(Patient(patient, dcmReaderNormal.getPatientWeight(), patHeight,
-                                                dcmReaderNormal.getPatientSex(),
+                                                dcmReaderNormal.getPatientSex(), pathology,
                                                 normalImages, None))
 
                 elif dcmReaderContrast is not None and not dcmReaderContrast.isBroken() and pathology != 'X':
@@ -134,7 +137,7 @@ class DataCollector:
                         patHeight = dcmReaderContrast.getPatientHeight()
 
                     self.patients.append(Patient(patient, dcmReaderNormal.getPatientWeight(), patHeight,
-                                            dcmReaderNormal.getPatientSex(),
+                                            dcmReaderNormal.getPatientSex(), pathology,
                                             normalImages, None))
 
     def serializePatients(self, destinationFolder):
@@ -152,6 +155,7 @@ class DataCollector:
     #         print(patient.patientHeight)
     #         print(patient.patientWeight)
     #         print(patient.patientSex)
+    #         print(patient.normalSaImages.shape)
     #         img_mtx = np.repeat(np.expand_dims(patient.normalSaImages[0,0,:,:], axis=2), 3, axis=2).astype(float)
     #         p1, p99 = np.percentile(img_mtx, (1, 99))
     #         img_mtx[img_mtx < p1] = p1
@@ -160,4 +164,74 @@ class DataCollector:
     #         plt.imshow(img_mtx)
     #         plt.show()
 
+    # def printPatientData(self):
+    #     for patient in self.patients:
+    #         print(patient.patientID)
+    #         print(patient.pathology)
+    #         os.mkdir("{}_contrast".format(patient.patientID))
+    #
+    #         if(patient.ScarDetectionTrainer):
+    #             print(patient.contrastSaImages.shape)
+    #
+    #             for i in range(patient.contrastSaImages.shape[0]):
+    #                 for j in range(patient.contrastSaImages.shape[1]):
+    #                     # Convert to float to avoid overflow or underflow losses.
+    #                     image = (patient.contrastSaImages[i, j, :, :]).astype(float)
+    #
+    #                     #image is not blank
+    #                     if image.min() < 0.99:
+    #
+    #                         # Rescaling grey scale between 0-255
+    #                         image_scaled = (np.maximum(image, 0) / image.max()) * 255.0
+    #
+    #                         # Convert to uint
+    #                         image_scaled = np.uint8(image_scaled)
+    #
+    #                         pilimage = Image.fromarray(image_scaled)
+    #
+    #                         pilimage.save("./{}_contrast/{}_{}.jpg".format(patient.patientID, i, j))
+
+
+    # def printPatientData(self):
+    #     for patient in self.patients:
+    #         print(patient.patientID)
+    #         print(patient.pathology)
+    #         os.mkdir("{}".format(patient.patientID))
+    #
+    #         if(patient.AutoEncoderTrainer):
+    #             print(patient.normalSaImages.shape)
+    #
+    #             for i in range(patient.normalSaImages.shape[0]):
+    #                 for j in range(patient.normalSaImages.shape[1]):
+    #                     # Convert to float to avoid overflow or underflow losses.
+    #                     image = (patient.normalSaImages[i, j, :, :]).astype(float)
+    #
+    #                     #image is not blank
+    #                     if image.min() < 0.99:
+    #
+    #                         # Rescaling grey scale between 0-255
+    #                         image_scaled = (np.maximum(image, 0) / image.max()) * 255.0
+    #
+    #                         # Convert to uint
+    #                         image_scaled = np.uint8(image_scaled)
+    #
+    #                         image_noisy = np.zeros(image_scaled.shape, np.uint8)
+    #                         prob = 0.05
+    #                         thres = 1 - prob
+    #                         for k in range(image_scaled.shape[0]):
+    #                             for f in range(image_scaled.shape[1]):
+    #                                 rdn = random.random()
+    #                                 if rdn < prob:
+    #                                     image_noisy[k][f] = 0
+    #                                 elif rdn > thres:
+    #                                     image_noisy[k][f] = 255
+    #                                 else:
+    #                                     image_noisy[k][f] = image_scaled[k][f]
+    #
+    #                         pilimage = Image.fromarray(image_noisy)
+    #
+    #                         #pilimage = ImageEnhance.Contrast(pilimage).enhance(1.2)
+    #                         #pilimage = ImageEnhance.Brightness(pilimage).enhance(0.4)
+    #
+    #                         pilimage.save("./{}/{}_{}.jpg".format(patient.patientID, i, j))
 

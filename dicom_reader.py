@@ -2,6 +2,7 @@ from utils import get_logger
 import pydicom as dicom
 import numpy as np
 import os
+from pydicom.pixel_data_handlers.util import apply_modality_lut
 
 logger = get_logger(__name__)
 
@@ -34,7 +35,8 @@ class DCMreaderVM:
             if file.find('.dcm') != -1:
                 try:
                     temp_ds = dicom.dcmread(os.path.join(folder_name, file))
-                    images.append(temp_ds.pixel_array)
+                    windowed = apply_modality_lut(temp_ds.pixel_array, temp_ds)
+                    images.append(windowed)
                     slice_locations.append(temp_ds.SliceLocation)
                     file_paths.append(os.path.join(folder_name, file))
                     if self.patientWeight == 0 and self.patientSex == 'X':
@@ -115,6 +117,7 @@ class DCMreaderVM:
 
     def get_imagesOfSlice(self, slice):
         return self.dcm_images[slice, :, :, :]
+
     
     def get_slicelocation(self, slice, frame):
         return self.dcm_slicelocations[slice, frame, 0]
