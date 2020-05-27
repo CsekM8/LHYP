@@ -2,12 +2,12 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import numpy as np
-from torchvision import datasets, models, transforms
+from torchvision import datasets, transforms
 import matplotlib.pyplot as plt
 import time
 import os
 import copy
-from ConvolutionalAutoEncoder import ConvAE
+from Model.ConvolutionalAutoEncoder import ConvAE
 import torch.nn.functional as F
 
 

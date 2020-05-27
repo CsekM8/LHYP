@@ -1,11 +1,9 @@
 import os
 from dicom_reader import DCMreaderVM
-from patient import Patient
+from DataRelatedTasks.patient import Patient
 import numpy as np
 import pickle
-from matplotlib import pyplot as plt
-from PIL import Image, ImageEnhance
-import random
+
 
 #Data collection mainly based on dcm files, and meta.txt (for pathology), only using contour to find patient height if it is missing in dcm.
 

@@ -1,4 +1,4 @@
-from data_collector import DataCollector
+from DataRelatedTasks.data_collector import DataCollector
 
 folder_containing_samples = 'D:/BME/6felev/Onlab/sample'
 serialization_destination_folder = 'D:/BME/6felev/Onlab/ser'

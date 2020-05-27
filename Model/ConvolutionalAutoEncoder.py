@@ -3,12 +3,13 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import matplotlib.pyplot as plt
-from PatientDataset import PatientAutoEncoderDataset
+from Model.PatientDataset import PatientAutoEncoderDataset
 from torch.utils.data import DataLoader
 from torchvision.utils import save_image
+from torch.autograd import Variable
 import time
 import copy
-from torchvision import transforms
+
 
 # utility functions
 def get_device():
@@ -21,35 +22,36 @@ def get_device():
 
 def save_decoded_image(img, epoch):
     img = img.view(img.size(0), 1, 224, 224)
-    save_image(img, './AE_IMAGES/linear_ae_image{}.png'.format(epoch))
+    save_image(img, './AE_IMAGES/conv_ae_image{}.png'.format(epoch))
 
 
-class LinearAE(nn.Module):
+class ConvAE(nn.Module):
     def __init__(self):
-        super(LinearAE, self).__init__()
-        self.encoder_hidden_layer = nn.Linear(
-            in_features=50176, out_features=1200
+        super(ConvAE, self).__init__()
+        self.encoder = nn.Sequential(
+            nn.Conv2d(1, 24, 3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(2),
+            nn.Conv2d(24, 12, 3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(2)
         )
-        self.encoder_output_layer = nn.Linear(
-            in_features=1200, out_features=1200
-        )
-        self.decoder_hidden_layer = nn.Linear(
-            in_features=1200, out_features=1200
-        )
-        self.decoder_output_layer = nn.Linear(
-            in_features=1200, out_features=50176
+
+        self.decoder = nn.Sequential(
+            nn.Conv2d(12, 12, 3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.UpsamplingBilinear2d(scale_factor=2),
+            nn.Conv2d(12, 24, 3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.UpsamplingBilinear2d(scale_factor=2),
+            nn.Conv2d(24, 1, 3, padding=1),
+            nn.Tanh()
         )
 
     def forward(self, x):
-        activation = self.encoder_hidden_layer(x)
-        activation = torch.relu(activation)
-        code = self.encoder_output_layer(activation)
-        code = torch.relu(code)
-        activation = self.decoder_hidden_layer(code)
-        activation = torch.relu(activation)
-        activation = self.decoder_output_layer(activation)
-        reconstructed = torch.relu(activation)
-        return reconstructed
+        x = self.encoder(x)
+        x = self.decoder(x)
+        return x
 
 def AutoEncoderTrain(model, loaders, NUM_EPOCHS):
     train_loss = []
@@ -68,8 +70,8 @@ def AutoEncoderTrain(model, loaders, NUM_EPOCHS):
             running_loss = 0.0
             for data in loaders[phase]:
                 img = data
+                img = Variable(img)
                 img = img.to(device)
-                img = img.view(img.size(0), -1)
                 optimizer.zero_grad()
 
                 with torch.set_grad_enabled(phase == 'train'):
@@ -103,8 +105,10 @@ def AutoEncoderTrain(model, loaders, NUM_EPOCHS):
 
 
 def test_image_reconstruction(model, testloader):
-    if not os.path.exists('recon'):
+    if not os.path.exists('../recon'):
         os.makedirs('recon')
+    if not os.path.exists('../testResults'):
+        os.makedirs('testResults')
 
     i = 0
 
@@ -113,8 +117,8 @@ def test_image_reconstruction(model, testloader):
         original = img.view(img.size(0), 1, 224, 224)
         # save_image(img.view(img.size(0), 1, 224, 224), './recon/original{}.png'.format(i))
         save_image(original, './recon/original.png')
+        img = Variable(img)
         img = img.to(device)
-        img = img.view(img.size(0), -1)
         outputs = model(img)
         outputs = outputs.view(outputs.size(0), 1, 224, 224).cpu().data
         # save_image(outputs, './recon/reconstruction{}.png'.format(i))
@@ -127,9 +131,9 @@ def test_image_reconstruction(model, testloader):
 
 if __name__ == "__main__":
     # constants
-    NUM_EPOCHS = 30
+    NUM_EPOCHS = 60
     LEARNING_RATE = 1e-3
-    BATCH_SIZE = 40
+    BATCH_SIZE = 60
 
     trainset = PatientAutoEncoderDataset('D:/BME/6felev/Onlab/WholeDataSet/AutoEncoder/training')
     testset = PatientAutoEncoderDataset('D:/BME/6felev/Onlab/WholeDataSet/AutoEncoder/test')
@@ -158,7 +162,7 @@ if __name__ == "__main__":
 
     print("Finished loaders")
 
-    AEmodel = LinearAE()
+    AEmodel = ConvAE()
 
     criterion = nn.MSELoss()
     optimizer = optim.Adam(AEmodel.parameters(), lr=LEARNING_RATE)
@@ -168,7 +172,7 @@ if __name__ == "__main__":
 
     AEmodel.to(device)
 
-    if not os.path.exists('AE_Images'):
+    if not os.path.exists('../AE_Images'):
         os.makedirs('AE_Images')
 
     print("Starting training")
@@ -181,10 +185,10 @@ if __name__ == "__main__":
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
 
-    # AEmodel.load_state_dict(torch.load("./AEweights/linearaeweights"))
+    # AEmodel.load_state_dict(torch.load("./AEweights/conv_aeweights"))
     # AEmodel.eval()
 
-    if not os.path.exists('graph'):
+    if not os.path.exists('../graph'):
         os.makedirs('graph')
 
     plt.savefig('./graph/loss.png')
@@ -193,6 +197,6 @@ if __name__ == "__main__":
     test_image_reconstruction(AEmodel, contrastloader)
 
     # save weights
-    if not os.path.exists('AEweights'):
+    if not os.path.exists('../AEweights'):
         os.makedirs('AEweights')
-    torch.save(AEmodel.state_dict(), "./AEweights/linearaeweights")
+    torch.save(AEmodel.state_dict(), "./AEweights/conv_aeweights")

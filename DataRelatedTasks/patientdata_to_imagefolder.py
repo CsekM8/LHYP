@@ -3,7 +3,7 @@ import pickle
 import numpy as np
 from PIL import Image
 import re
-from patient import Patient
+
 
 class PatientToImageFolder:
 

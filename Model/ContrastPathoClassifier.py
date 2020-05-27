@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import time
 import os
 import copy
-from ConvolutionalAutoEncoder import ConvAE
+from Model.ConvolutionalAutoEncoder import ConvAE
 
 def train_classification(classModel, AEmodel, dataloaders, criterion, optimizer, num_epochs=20):
     since = time.time()
