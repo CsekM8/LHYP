@@ -41,6 +41,8 @@ class DataCollector:
 
                 if dcmReaderNormal is not None and not dcmReaderNormal.isBroken():
                     requiredNormalImageCount = 6
+                    if dcmReaderNormal.getSliceNum() < requiredNormalImageCount:
+                        requiredNormalImageCount = dcmReaderNormal.getSliceNum()
                     normalImageStep = int(dcmReaderNormal.getSliceNum() / requiredNormalImageCount)
                     a, b = dcmReaderNormal.get_image(0, 0).shape
                     normalImages = np.ones((requiredNormalImageCount, dcmReaderNormal.getFrameNum(), a, b))
@@ -50,6 +52,8 @@ class DataCollector:
 
                     if dcmReaderContrast is not None and not dcmReaderContrast.isBroken() and pathology != 'X':
                         requiredContrastImageCount = 6
+                        if dcmReaderContrast.getSliceNum() < requiredContrastImageCount:
+                            requiredContrastImageCount = dcmReaderContrast.getSliceNum()
                         contrastImageStep = int(dcmReaderContrast.getSliceNum()/requiredContrastImageCount)
                         c, d = dcmReaderContrast.get_image(0, 0).shape
                         contrastImages = np.ones((requiredContrastImageCount, dcmReaderContrast.getFrameNum(), c, d))
@@ -110,6 +114,8 @@ class DataCollector:
 
                 elif dcmReaderContrast is not None and not dcmReaderContrast.isBroken() and pathology != 'X':
                     requiredContrastImageCount = 6
+                    if dcmReaderContrast.getSliceNum() < requiredContrastImageCount:
+                        requiredContrastImageCount = dcmReaderContrast.getSliceNum()
                     contrastImageStep = int(dcmReaderContrast.getSliceNum() / requiredContrastImageCount)
                     c, d = dcmReaderContrast.get_image(0, 0).shape
                     contrastImages = np.ones((requiredContrastImageCount, dcmReaderContrast.getFrameNum(), c, d))
@@ -163,75 +169,4 @@ class DataCollector:
     #         img_mtx = (img_mtx - p1) / (p99 - p1)
     #         plt.imshow(img_mtx)
     #         plt.show()
-
-    # def printPatientData(self):
-    #     for patient in self.patients:
-    #         print(patient.patientID)
-    #         print(patient.pathology)
-    #         os.mkdir("{}_contrast".format(patient.patientID))
-    #
-    #         if(patient.ScarDetectionTrainer):
-    #             print(patient.contrastSaImages.shape)
-    #
-    #             for i in range(patient.contrastSaImages.shape[0]):
-    #                 for j in range(patient.contrastSaImages.shape[1]):
-    #                     # Convert to float to avoid overflow or underflow losses.
-    #                     image = (patient.contrastSaImages[i, j, :, :]).astype(float)
-    #
-    #                     #image is not blank
-    #                     if image.min() < 0.99:
-    #
-    #                         # Rescaling grey scale between 0-255
-    #                         image_scaled = (np.maximum(image, 0) / image.max()) * 255.0
-    #
-    #                         # Convert to uint
-    #                         image_scaled = np.uint8(image_scaled)
-    #
-    #                         pilimage = Image.fromarray(image_scaled)
-    #
-    #                         pilimage.save("./{}_contrast/{}_{}.jpg".format(patient.patientID, i, j))
-
-
-    # def printPatientData(self):
-    #     for patient in self.patients:
-    #         print(patient.patientID)
-    #         print(patient.pathology)
-    #         os.mkdir("{}".format(patient.patientID))
-    #
-    #         if(patient.AutoEncoderTrainer):
-    #             print(patient.normalSaImages.shape)
-    #
-    #             for i in range(patient.normalSaImages.shape[0]):
-    #                 for j in range(patient.normalSaImages.shape[1]):
-    #                     # Convert to float to avoid overflow or underflow losses.
-    #                     image = (patient.normalSaImages[i, j, :, :]).astype(float)
-    #
-    #                     #image is not blank
-    #                     if image.min() < 0.99:
-    #
-    #                         # Rescaling grey scale between 0-255
-    #                         image_scaled = (np.maximum(image, 0) / image.max()) * 255.0
-    #
-    #                         # Convert to uint
-    #                         image_scaled = np.uint8(image_scaled)
-    #
-    #                         image_noisy = np.zeros(image_scaled.shape, np.uint8)
-    #                         prob = 0.05
-    #                         thres = 1 - prob
-    #                         for k in range(image_scaled.shape[0]):
-    #                             for f in range(image_scaled.shape[1]):
-    #                                 rdn = random.random()
-    #                                 if rdn < prob:
-    #                                     image_noisy[k][f] = 0
-    #                                 elif rdn > thres:
-    #                                     image_noisy[k][f] = 255
-    #                                 else:
-    #                                     image_noisy[k][f] = image_scaled[k][f]
-    #
-    #                         pilimage = Image.fromarray(image_noisy)
-    #
-    #                         #pilimage = ImageEnhance.Contrast(pilimage).enhance(1.2)
-    #                         #pilimage = ImageEnhance.Brightness(pilimage).enhance(0.4)
-    #
-    #                         pilimage.save("./{}/{}_{}.jpg".format(patient.patientID, i, j))
 
